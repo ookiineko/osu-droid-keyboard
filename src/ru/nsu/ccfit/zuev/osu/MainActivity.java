@@ -26,6 +26,7 @@ import android.os.StatFs;
 import android.util.DisplayMetrics;
 import android.view.Gravity;
 import android.view.KeyEvent;
+import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -107,6 +108,22 @@ public class MainActivity extends BaseGameActivity implements
     private boolean willReplay = false;
     private static boolean activityVisible = true;
     private static final ScheduledExecutorService scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+
+    // Keyboard control
+
+    private static final int X_KEYCODE = KeyEvent.KEYCODE_X;
+
+    private static final int Z_KEYCODE = KeyEvent.KEYCODE_Z;
+
+    private static final int X_POINTER_ID = 10;
+
+    private static final int Z_POINTER_ID = 11;
+
+    private static final int FAKE_TOUCH_X = -1000;
+
+    private static final int FAKE_TOUCH_Y = -1000;
+
+    private static final boolean[] gameKeyPressed = new boolean[2];
 
     // Multiplayer
     private Uri roomInviteLink;
@@ -746,6 +763,45 @@ public class MainActivity extends BaseGameActivity implements
         }
     }
 
+    private boolean sendFakeTouchEvent(int action, int pointerID) {
+        return mEngine.onTouchEvent(
+            TouchEvent.obtain(
+                FAKE_TOUCH_X, FAKE_TOUCH_Y, action, pointerID,
+                MotionEvent.obtain(
+                    0, 0, action, FAKE_TOUCH_X, FAKE_TOUCH_Y, 0
+                )
+            )
+        );
+    }
+
+    private boolean handleGameKeyEvent(int action, int keyCode) {
+        int keyID;
+        int pointerID;
+
+        switch (keyCode) {
+            case X_KEYCODE:
+                keyID = 0;
+                pointerID = X_POINTER_ID;
+                break;
+            case Z_KEYCODE:
+                keyID = 1;
+                pointerID = Z_POINTER_ID;
+                break;
+            default:
+                return false;
+        }
+
+        if (action == KeyEvent.ACTION_DOWN && gameKeyPressed[keyID])
+            return false;
+
+        if (!sendFakeTouchEvent(action, pointerID))
+            return false;
+
+        gameKeyPressed[keyID] = action == KeyEvent.ACTION_DOWN;
+
+        return true;
+    }
+
     @Override
     public boolean onKeyDown(final int keyCode, final KeyEvent event) {
         if (this.mEngine == null) {
@@ -852,7 +908,19 @@ public class MainActivity extends BaseGameActivity implements
                 }
             }
         }
+
+        if (handleGameKeyEvent(KeyEvent.ACTION_DOWN, keyCode))
+            return true;
+
         return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public boolean onKeyUp(int keyCode, KeyEvent event) {
+        if (handleGameKeyEvent(KeyEvent.ACTION_UP, keyCode))
+            return true;
+
+        return super.onKeyUp(keyCode, event);
     }
 
     public void forcedExit() {

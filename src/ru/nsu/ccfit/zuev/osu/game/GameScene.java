@@ -105,7 +105,7 @@ import static com.rian.osu.utils.ModConverter.convertLegacyMods;
 
 public class GameScene implements IUpdateHandler, GameObjectListener,
         IOnSceneTouchListener {
-    public static final int CursorCount = 10;
+    public static final int CursorCount = 12;
     private final Engine engine;
     private final Cursor[] cursors = new Cursor[CursorCount];
     private final boolean[] cursorIIsDown = new boolean[CursorCount];
